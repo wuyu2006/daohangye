@@ -5,15 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>欢迎回家(●'◡'●)</title>
   <style>
-// 页面可见性控制
-document.addEventListener('visibilitychange', function() {
-    if (document.hidden) { // 简化写法
-        document.title = "别走啊(っ °Д °;)っ";
-    } else {
-        document.title = "欢迎回来o((>ω< ))o";
-    }
-});
-
 // 首次加载效果
 window.addEventListener('load', function() {
     setTimeout(function() {
@@ -251,6 +242,14 @@ window.addEventListener('load', function() {
 
   <!-- 鼠标交互效果及弹窗功能 -->
   <script>
+// 页面可见性控制
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) { // 简化写法
+        document.title = "别走啊(っ °Д °;)っ";
+    } else {
+        document.title = "欢迎回来o((>ω< ))o";
+    }
+});
     // 鼠标移动动态效果
     document.addEventListener('mousemove', function(e) {
       const navItems = document.querySelectorAll('.nav-item');
