@@ -3,8 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>网页导航</title>
+  <title>欢迎回家(●'◡'●)</title>
   <style>
+// 页面可见性控制
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) { // 简化写法
+        document.title = "别走啊(っ °Д °;)っ";
+    } else {
+        document.title = "欢迎回来o((>ω< ))o";
+    }
+});
+
+// 首次加载效果
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        document.title = "欢迎回来";
+    }, 2000); // 2秒后切换为常规欢迎语
+});
     /* 清除默认 margin 并设置全屏 */
     html, body {
       margin: 0;
