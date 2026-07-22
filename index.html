@@ -40,12 +40,23 @@
 
     html {
       scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      width: 0 !important;
+      height: 0 !important;
+      display: none !important;
     }
 
     body {
       min-height: 100vh;
       min-height: 100dvh;
       overflow-x: hidden;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
       background:
         radial-gradient(circle at 12% 10%, rgba(139, 124, 255, 0.19), transparent 30%),
         radial-gradient(circle at 86% 8%, rgba(73, 216, 255, 0.12), transparent 28%),
@@ -1293,9 +1304,795 @@
         transition-duration: .01ms !important;
       }
     }
+
+
+    /* 页面内置滚动条：隐藏浏览器原生滚动条，避免开场结束时出现宽度跳变 */
+    .custom-scrollbar {
+      position: fixed;
+      top: 14px;
+      right: 7px;
+      bottom: 14px;
+      z-index: 90;
+      width: 10px;
+      opacity: .56;
+      pointer-events: auto;
+      transition:
+        opacity .72s cubic-bezier(.16, 1, .3, 1),
+        transform .72s cubic-bezier(.16, 1, .3, 1);
+      transform: translateX(0);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .custom-scrollbar::before {
+      content: "";
+      position: absolute;
+      inset: 0 2px;
+      border: 1px solid rgba(255,255,255,.055);
+      border-radius: 999px;
+      opacity: .72;
+      background: rgba(6, 13, 25, .34);
+      box-shadow: inset 0 0 12px rgba(0,0,0,.26);
+      backdrop-filter: blur(8px);
+      transition: inset .25s ease, opacity .25s ease, background .25s ease;
+    }
+
+    .custom-scrollbar:hover,
+    .custom-scrollbar.is-active,
+    .custom-scrollbar.is-dragging {
+      opacity: 1;
+    }
+
+    .custom-scrollbar:hover::before,
+    .custom-scrollbar.is-dragging::before {
+      inset-inline: 0;
+      opacity: 1;
+      background: rgba(8, 17, 31, .68);
+    }
+
+    .custom-scrollbar-track {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    .custom-scrollbar-thumb {
+      position: absolute;
+      top: 0;
+      left: 2px;
+      right: 2px;
+      min-height: 50px;
+      border: 1px solid rgba(255,255,255,.24);
+      border-radius: 999px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.36), rgba(255,255,255,.08)),
+        linear-gradient(180deg, #8b7cff 0%, #49d8ff 64%, #55dda0 100%);
+      box-shadow:
+        0 0 14px rgba(73,216,255,.26),
+        0 8px 20px rgba(0,0,0,.24),
+        inset 0 1px 0 rgba(255,255,255,.52);
+      transform: translate3d(0, 0, 0);
+      transform-origin: center;
+      cursor: grab;
+      will-change: transform, height;
+      transition:
+        left .25s ease,
+        right .25s ease,
+        filter .25s ease,
+        box-shadow .25s ease;
+    }
+
+    .custom-scrollbar-thumb::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 8px;
+      bottom: 8px;
+      width: 1px;
+      border-radius: inherit;
+      opacity: .68;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,.82), transparent);
+      transform: translateX(-50%);
+    }
+
+    .custom-scrollbar:hover .custom-scrollbar-thumb,
+    .custom-scrollbar.is-dragging .custom-scrollbar-thumb {
+      left: 1px;
+      right: 1px;
+      filter: brightness(1.12) saturate(1.08);
+      box-shadow:
+        0 0 18px rgba(73,216,255,.38),
+        0 10px 24px rgba(0,0,0,.28),
+        inset 0 1px 0 rgba(255,255,255,.58);
+    }
+
+    .custom-scrollbar.is-dragging .custom-scrollbar-thumb {
+      cursor: grabbing;
+    }
+
+    .custom-scrollbar.is-hidden {
+      opacity: 0 !important;
+      pointer-events: none;
+      transform: translateX(8px);
+    }
+
+    body.custom-scroll-dragging {
+      cursor: grabbing;
+      user-select: none;
+    }
+
+    body.intro-active .custom-scrollbar {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(10px);
+    }
+
+    body.intro-active.intro-revealing .custom-scrollbar {
+      opacity: .56;
+      transform: translateX(0);
+    }
+
+    @media (max-width: 680px) {
+      .custom-scrollbar {
+        top: 10px;
+        right: 3px;
+        bottom: calc(84px + env(safe-area-inset-bottom));
+        width: 7px;
+      }
+
+      .custom-scrollbar::before {
+        inset-inline: 2px;
+        border-color: transparent;
+        background: rgba(6, 13, 25, .18);
+      }
+
+      .custom-scrollbar-thumb {
+        left: 2px;
+        right: 2px;
+        min-height: 42px;
+      }
+    }
+
+
+    /* 一次性页面进入动画：仅覆盖加载阶段，不改变原页面内容 */
+    body.intro-active {
+      overflow: hidden;
+    }
+
+    /*
+      底层页面从首帧开始就使用最终渲染状态。
+      不再对整个页面应用 blur / brightness / saturate / scale，
+      避免动画结束移除 class 时触发图层重合成和颜色闪变。
+    */
+    body.intro-active .app-shell,
+    body.intro-active.intro-revealing .app-shell {
+      opacity: 1;
+      filter: none;
+      transform: none;
+      transition: none;
+      will-change: auto;
+    }
+
+    body.intro-active .bottom-nav,
+    body.intro-active.intro-revealing .bottom-nav {
+      opacity: 1;
+      filter: none;
+      transition: none;
+      will-change: auto;
+    }
+
+    .site-intro {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      isolation: isolate;
+      opacity: 1;
+      visibility: visible;
+      /* 与 body 完全一致，半透明交叉时不再产生色差 */
+      background-color: #050914;
+      background-image:
+        radial-gradient(circle at 12% 10%, rgba(139, 124, 255, 0.19), transparent 30%),
+        radial-gradient(circle at 86% 8%, rgba(73, 216, 255, 0.12), transparent 28%),
+        radial-gradient(circle at 70% 88%, rgba(85, 221, 160, 0.08), transparent 26%),
+        linear-gradient(145deg, #040711 0%, #07101d 50%, #050914 100%);
+      color: #f7f9fc;
+      cursor: progress;
+      transform: translateZ(0);
+      backface-visibility: hidden;
+      will-change: opacity;
+    }
+
+    .intro-curtain {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      z-index: -3;
+      width: calc(50% + 1px);
+      background:
+        radial-gradient(circle at 50% 42%, rgba(139,124,255,.16), transparent 38%),
+        linear-gradient(145deg, #040711 0%, #07101d 54%, #050914 100%);
+      transition:
+        transform 1.30s cubic-bezier(.16, 1, .3, 1),
+        opacity 1.08s cubic-bezier(.22, .61, .36, 1),
+        filter 1.18s cubic-bezier(.16, 1, .3, 1);
+      will-change: transform, opacity, filter;
+    }
+
+    .intro-curtain--left {
+      left: 0;
+      border-right: 1px solid rgba(255,255,255,.035);
+    }
+
+    .intro-curtain--right {
+      right: 0;
+      border-left: 1px solid rgba(255,255,255,.035);
+    }
+
+    .intro-atmosphere {
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      overflow: hidden;
+      opacity: 0;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(139,124,255,.16), transparent 26%),
+        radial-gradient(circle at 18% 24%, rgba(73,216,255,.10), transparent 24%),
+        radial-gradient(circle at 82% 76%, rgba(85,221,160,.07), transparent 22%);
+      animation: introAtmosphereIn 1.2s .12s ease forwards;
+    }
+
+    .intro-atmosphere::before {
+      content: "";
+      position: absolute;
+      inset: -25%;
+      opacity: .36;
+      background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 52px 52px;
+      transform: perspective(680px) rotateX(62deg) translateY(24%);
+      transform-origin: center;
+      animation: introGridDrift 5.5s linear infinite;
+      mask-image: radial-gradient(circle at center, #000 12%, transparent 64%);
+    }
+
+    .intro-atmosphere::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(76vw, 920px);
+      aspect-ratio: 1;
+      border: 1px solid rgba(139,124,255,.10);
+      border-radius: 50%;
+      box-shadow:
+        0 0 0 72px rgba(73,216,255,.025),
+        0 0 0 144px rgba(139,124,255,.018),
+        0 0 140px rgba(139,124,255,.12);
+      transform: translate(-50%, -50%) scale(.72);
+      animation: introHaloExpand 2.2s .2s cubic-bezier(.2,.8,.2,1) forwards;
+    }
+
+    .site-intro::before {
+      content: "";
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      top: -2px;
+      z-index: 4;
+      height: 1px;
+      opacity: 0;
+      background: linear-gradient(90deg, transparent, rgba(73,216,255,.2), #d9f7ff, rgba(139,124,255,.25), transparent);
+      box-shadow: 0 0 20px rgba(73,216,255,.65), 0 0 50px rgba(139,124,255,.28);
+      animation: introScan 2.4s .3s cubic-bezier(.2,.7,.2,1) forwards;
+    }
+
+    .site-intro::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      background:
+        linear-gradient(to bottom, rgba(255,255,255,.025), transparent 14%, transparent 86%, rgba(255,255,255,.018)),
+        radial-gradient(circle at center, transparent 28%, rgba(0,0,0,.42) 100%);
+    }
+
+    .intro-stage {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: min(520px, calc(100vw - 40px));
+      padding: 24px;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(18px) scale(.98);
+      animation: introStageIn .9s .18s cubic-bezier(.2,.8,.2,1) forwards;
+      transition: opacity .42s ease, transform .52s cubic-bezier(.4,0,1,1), filter .42s ease;
+    }
+
+    .intro-emblem {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 148px;
+      height: 148px;
+      opacity: 1;
+      filter: blur(0) brightness(1);
+      transform: translateY(0) scale(1);
+      transition:
+        opacity .72s cubic-bezier(.4, 0, .2, 1),
+        filter .86s cubic-bezier(.16, 1, .3, 1),
+        transform .92s cubic-bezier(.16, 1, .3, 1);
+      will-change: opacity, filter, transform;
+    }
+
+    .intro-ring {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0;
+      animation: introRingReveal .9s cubic-bezier(.2,.8,.2,1) forwards;
+    }
+
+    .intro-ring--outer {
+      inset: 0;
+      border: 1px solid rgba(255,255,255,.13);
+      border-top-color: rgba(73,216,255,.85);
+      border-right-color: rgba(139,124,255,.58);
+      box-shadow: 0 0 34px rgba(73,216,255,.08);
+      animation-delay: .38s;
+    }
+
+    .intro-ring--middle {
+      inset: 18px;
+      border: 1px dashed rgba(255,255,255,.16);
+      animation-delay: .5s;
+    }
+
+    .intro-ring--inner {
+      inset: 35px;
+      border: 1px solid rgba(139,124,255,.24);
+      box-shadow: inset 0 0 30px rgba(139,124,255,.06);
+      animation-delay: .62s;
+    }
+
+    .intro-emblem::before,
+    .intro-emblem::after {
+      content: "";
+      position: absolute;
+      z-index: 3;
+      width: 8px;
+      height: 8px;
+      border: 2px solid #07101d;
+      border-radius: 50%;
+      opacity: 0;
+      background: #49d8ff;
+      box-shadow: 0 0 16px rgba(73,216,255,.9);
+      animation: introNodeIn .5s 1s ease forwards, introNodePulse 1.7s 1.5s ease-in-out infinite;
+    }
+
+    .intro-emblem::before {
+      left: 14px;
+      top: 34px;
+    }
+
+    .intro-emblem::after {
+      right: 8px;
+      bottom: 43px;
+      background: #8b7cff;
+      box-shadow: 0 0 16px rgba(139,124,255,.9);
+      animation-delay: 1.12s, 1.62s;
+    }
+
+    .intro-core {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      width: 66px;
+      height: 66px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 21px;
+      opacity: 0;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.22), rgba(255,255,255,.035)),
+        linear-gradient(145deg, #8071ff, #2fbddd);
+      box-shadow:
+        0 18px 42px rgba(67,93,255,.28),
+        0 0 70px rgba(73,216,255,.14),
+        inset 0 1px 0 rgba(255,255,255,.46);
+      transform: scale(.68) rotate(-10deg);
+      animation: introCoreIn .82s .58s cubic-bezier(.16,1,.3,1) forwards;
+    }
+
+    .intro-core::before {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border: 1px solid rgba(255,255,255,.28);
+      border-radius: 16px;
+    }
+
+    .intro-core::after {
+      content: "";
+      position: absolute;
+      width: 160%;
+      height: 18px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.54), transparent);
+      transform: rotate(-42deg) translateY(-70px);
+      animation: introCoreShine 1.1s 1.12s ease forwards;
+    }
+
+    .intro-core span {
+      position: relative;
+      z-index: 2;
+      font-size: 26px;
+      font-weight: 850;
+      letter-spacing: -.08em;
+      text-shadow: 0 2px 12px rgba(0,0,0,.24);
+    }
+
+    .intro-copy {
+      margin-top: 26px;
+      opacity: 1;
+      filter: blur(0);
+      transform: translateY(0) scale(1);
+      transition:
+        opacity .66s cubic-bezier(.4, 0, .2, 1),
+        filter .82s cubic-bezier(.16, 1, .3, 1),
+        transform .88s cubic-bezier(.16, 1, .3, 1);
+      will-change: opacity, filter, transform;
+    }
+
+    .intro-kicker,
+    .intro-title,
+    .intro-subtitle {
+      opacity: 0;
+      transform: translateY(10px);
+      animation: introTextIn .68s cubic-bezier(.2,.8,.2,1) forwards;
+    }
+
+    .intro-kicker {
+      display: block;
+      color: #8292aa;
+      font-size: 10px;
+      font-weight: 750;
+      letter-spacing: .34em;
+      text-transform: uppercase;
+      animation-delay: .92s;
+    }
+
+    .intro-title {
+      margin-top: 10px;
+      font-size: clamp(24px, 5vw, 34px);
+      font-weight: 730;
+      letter-spacing: .12em;
+      line-height: 1.15;
+      background: linear-gradient(90deg, #fff 0%, #cbc6ff 48%, #83e4ff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation-delay: 1.04s;
+    }
+
+    .intro-subtitle {
+      margin-top: 10px;
+      color: #78879d;
+      font-size: 11px;
+      letter-spacing: .16em;
+      animation-delay: 1.16s;
+    }
+
+    .intro-progress {
+      position: relative;
+      width: min(340px, 76vw);
+      height: 2px;
+      margin-top: 30px;
+      overflow: hidden;
+      border-radius: 999px;
+      opacity: 0;
+      background: rgba(255,255,255,.08);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.015);
+      animation: introTextIn .5s 1.18s ease forwards;
+    }
+
+    .intro-progress span {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #8b7cff, #49d8ff 72%, #e8fbff);
+      box-shadow: 0 0 16px rgba(73,216,255,.72);
+      transform: scaleX(0);
+      transform-origin: left center;
+      animation: introProgress 1.72s 1.22s cubic-bezier(.22,.74,.22,1) forwards;
+    }
+
+    .intro-status {
+      display: flex;
+      justify-content: space-between;
+      width: min(340px, 76vw);
+      margin-top: 9px;
+      color: #58677e;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 9px;
+      letter-spacing: .16em;
+      opacity: 0;
+      animation: introTextIn .5s 1.25s ease forwards;
+    }
+
+    .intro-percent {
+      color: #91a3bb;
+      letter-spacing: .06em;
+    }
+
+    /* 第一阶段：标志、文字、进度先完整消散，避免节点删除时残影硬切 */
+    .site-intro.is-dissolving .intro-emblem {
+      opacity: 0;
+      filter: blur(20px) brightness(1.28);
+      transform: translateY(-10px) scale(.78);
+    }
+
+    .site-intro.is-dissolving .intro-copy {
+      opacity: 0;
+      filter: blur(13px);
+      transform: translateY(-8px) scale(.97);
+    }
+
+    .site-intro.is-dissolving .intro-progress,
+    .site-intro.is-dissolving .intro-status {
+      opacity: 0;
+      filter: blur(8px);
+      transform: translateY(7px) scaleX(.94);
+      transition:
+        opacity .48s cubic-bezier(.4, 0, .2, 1),
+        filter .62s cubic-bezier(.16, 1, .3, 1),
+        transform .68s cubic-bezier(.16, 1, .3, 1);
+    }
+
+    /* 清除 forwards 对最终样式的占用，让退场 opacity/transform 真正生效 */
+    .site-intro.is-dissolving .intro-stage,
+    .site-intro.is-dissolving .intro-ring,
+    .site-intro.is-dissolving .intro-core,
+    .site-intro.is-dissolving .intro-emblem::before,
+    .site-intro.is-dissolving .intro-emblem::after,
+    .site-intro.is-dissolving .intro-kicker,
+    .site-intro.is-dissolving .intro-title,
+    .site-intro.is-dissolving .intro-subtitle,
+    .site-intro.is-dissolving .intro-progress,
+    .site-intro.is-dissolving .intro-progress span,
+    .site-intro.is-dissolving .intro-status {
+      animation: none !important;
+    }
+
+    .site-intro.is-dissolving .intro-stage {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .site-intro.is-dissolving .intro-ring,
+    .site-intro.is-dissolving .intro-core,
+    .site-intro.is-dissolving .intro-emblem::before,
+    .site-intro.is-dissolving .intro-emblem::after,
+    .site-intro.is-dissolving .intro-kicker,
+    .site-intro.is-dissolving .intro-title,
+    .site-intro.is-dissolving .intro-subtitle {
+      opacity: 1;
+      transform: none;
+    }
+
+    .site-intro.is-dissolving .intro-progress span {
+      transform: scaleX(1);
+    }
+
+    .site-intro.is-leaving {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      cursor: default;
+      transition:
+        opacity 1.46s cubic-bezier(.22, .61, .36, 1),
+        visibility 0s linear 1.46s;
+    }
+
+    /* 第二阶段只负责环境和幕布撤离，中央内容此时已经完全透明 */
+    .site-intro.is-leaving .intro-stage {
+      animation: none !important;
+      opacity: 0;
+      filter: blur(18px);
+      transform: translateY(-8px) scale(1.025);
+      transition:
+        opacity .34s linear,
+        transform .72s cubic-bezier(.16, 1, .3, 1),
+        filter .62s cubic-bezier(.16, 1, .3, 1);
+    }
+
+    .site-intro.is-leaving .intro-atmosphere {
+      opacity: 0;
+      filter: blur(16px);
+      transform: scale(1.09);
+      transition:
+        opacity 1.08s cubic-bezier(.22, .61, .36, 1),
+        filter 1.16s cubic-bezier(.16, 1, .3, 1),
+        transform 1.24s cubic-bezier(.16, 1, .3, 1);
+    }
+
+    .site-intro.is-leaving::before {
+      opacity: 0;
+      animation: none !important;
+      transition: opacity .34s ease;
+    }
+
+    .site-intro.is-leaving::after {
+      opacity: 0;
+      transition: opacity 1.10s cubic-bezier(.22, .61, .36, 1);
+    }
+
+    .site-intro.is-leaving .intro-curtain--left {
+      opacity: .18;
+      filter: blur(18px);
+      transform: translateX(-14%) scaleX(1.04);
+    }
+
+    .site-intro.is-leaving .intro-curtain--right {
+      opacity: .18;
+      filter: blur(18px);
+      transform: translateX(14%) scaleX(1.04);
+    }
+
+    @keyframes introAtmosphereIn {
+      to { opacity: 1; }
+    }
+
+    @keyframes introGridDrift {
+      to { transform: perspective(680px) rotateX(62deg) translateY(calc(24% + 52px)); }
+    }
+
+    @keyframes introHaloExpand {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(.72); }
+      45% { opacity: 1; }
+      100% { opacity: .72; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    @keyframes introScan {
+      0% { top: -2px; opacity: 0; }
+      12% { opacity: .9; }
+      82% { opacity: .72; }
+      100% { top: 102%; opacity: 0; }
+    }
+
+    @keyframes introStageIn {
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes introRingReveal {
+      0% { opacity: 0; transform: scale(.72) rotate(-36deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0); }
+    }
+
+    @keyframes introCoreIn {
+      to { opacity: 1; transform: scale(1) rotate(0); }
+    }
+
+    @keyframes introCoreShine {
+      to { transform: rotate(-42deg) translateY(82px); }
+    }
+
+    @keyframes introNodeIn {
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes introNodePulse {
+      50% { transform: scale(1.38); filter: brightness(1.25); }
+    }
+
+    @keyframes introTextIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes introProgress {
+      to { transform: scaleX(1); }
+    }
+
+    @media (max-width: 680px) {
+      .intro-stage {
+        padding-inline: 14px;
+      }
+
+      .intro-emblem {
+        width: 126px;
+        height: 126px;
+      }
+
+      .intro-ring--middle { inset: 16px; }
+      .intro-ring--inner { inset: 31px; }
+      .intro-core { width: 60px; height: 60px; border-radius: 19px; }
+      .intro-core::before { border-radius: 14px; }
+      .intro-title { letter-spacing: .08em; }
+      .intro-kicker { letter-spacing: .24em; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .site-intro,
+      .site-intro *,
+      .site-intro::before,
+      .site-intro::after {
+        animation: none !important;
+        transition-duration: .18s !important;
+      }
+
+      .intro-atmosphere,
+      .intro-stage,
+      .intro-ring,
+      .intro-core,
+      .intro-kicker,
+      .intro-title,
+      .intro-subtitle,
+      .intro-progress,
+      .intro-status {
+        opacity: 1;
+        transform: none;
+      }
+
+      .intro-progress span {
+        transform: scaleX(1);
+      }
+    }
+
   </style>
-<link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/SoruxGPT.css"/></head>
-<body>
+<link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/SoruxGPT.css"/><style id="wuyu-palette-lock">
+    html { background-color: #050914 !important; }
+    body {
+      background-color: #050914 !important;
+      background-image:
+        radial-gradient(circle at 12% 10%, rgba(139, 124, 255, 0.19), transparent 30%),
+        radial-gradient(circle at 86% 8%, rgba(73, 216, 255, 0.12), transparent 28%),
+        radial-gradient(circle at 70% 88%, rgba(85, 221, 160, 0.08), transparent 26%),
+        linear-gradient(145deg, #040711 0%, #07101d 50%, #050914 100%) !important;
+      color: var(--text) !important;
+    }
+  </style><link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/SoruxGPT.css"/></head>
+<body class="intro-active">
+
+  <div class="site-intro" id="site-intro" aria-hidden="true">
+    <div class="intro-curtain intro-curtain--left"></div>
+    <div class="intro-curtain intro-curtain--right"></div>
+    <div class="intro-atmosphere"></div>
+
+    <div class="intro-stage">
+      <div class="intro-emblem">
+        <span class="intro-ring intro-ring--outer"></span>
+        <span class="intro-ring intro-ring--middle"></span>
+        <span class="intro-ring intro-ring--inner"></span>
+        <div class="intro-core"><span>W</span></div>
+      </div>
+
+      <div class="intro-copy">
+        <span class="intro-kicker">Curated Digital Workspace</span>
+        <div class="intro-title">WUYU NAVIGATION</div>
+        <div class="intro-subtitle">CONNECTING YOUR DIGITAL WORKSPACE</div>
+      </div>
+
+      <div class="intro-progress"><span></span></div>
+      <div class="intro-status">
+        <span>INITIALIZING</span>
+        <span class="intro-percent" id="intro-percent">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="custom-scrollbar" id="custom-scrollbar" role="scrollbar" aria-controls="main-content" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+    <div class="custom-scrollbar-track" id="custom-scrollbar-track">
+      <div class="custom-scrollbar-thumb" id="custom-scrollbar-thumb"></div>
+    </div>
+  </div>
+
   <a class="skip-link" href="#main-content">跳转到主要内容</a>
 
   <div class="app-shell">
@@ -1432,7 +2229,7 @@
         <p>按 <strong>Ctrl / ⌘ + K</strong> 可立即聚焦搜索框；按 <strong>Esc</strong> 可清空搜索或关闭弹窗</p>
         <p>如遇到无法打开、功能异常等问题 可联系网站管理员</p>
         <div class="contact-box">
-          <code id="dev-email" style="cursor:pointer;" onclick="document.getElementById('copy-email').click();">WY70572303@Outlook.com</code>
+          <code id="dev-email" style="cursor:pointer;" onclick="document.getElementById('copy-email').click();"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="dc8b85ebece9ebeeefecef9c93a9a8b0b3b3b7f2bfb3b1">[email&#160;protected]</a></code>
           <button class="copy-btn" id="copy-email" type="button">复制邮箱</button>
         </div>
       </div>
@@ -1445,7 +2242,7 @@
         <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
       </button>
       <h3 id="announcement-title">站点公告</h3>
-      <p class="modal-subtitle">公告内容如下 如有问题可联系管理员WY770572303@Outlook.com</p>
+      <p class="modal-subtitle">公告内容如下 如有问题可联系管理员<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="26717f111116131114151615666953524a49494d0845494b">[email&#160;protected]</a></p>
       <div class="modal-content announcement-list" id="announcement-content" aria-live="polite">
         <div class="announcement-item">正在载入公告…</div>
       </div>
@@ -1457,6 +2254,237 @@
   <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
     (() => {
       'use strict';
+
+
+      // 页面进入动画：当前页面加载期间只执行一次；刷新或重新打开后重新播放。
+      const siteIntro = document.getElementById('site-intro');
+      if (siteIntro) {
+        const introPercent = document.getElementById('intro-percent');
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const progressDuration = reducedMotion ? 180 : 2050;
+        const stayDuration = reducedMotion ? 220 : 2720;
+        const revealLead = reducedMotion ? 20 : 320;
+        const exitDuration = reducedMotion ? 220 : 1580;
+        const progressStart = performance.now();
+
+        function updateIntroProgress(now) {
+          const linear = Math.min((now - progressStart) / progressDuration, 1);
+          const eased = 1 - Math.pow(1 - linear, 3);
+          if (introPercent) introPercent.textContent = `${Math.round(eased * 100)}%`;
+          if (linear < 1 && siteIntro.isConnected) {
+            window.requestAnimationFrame(updateIntroProgress);
+          }
+        }
+
+        window.requestAnimationFrame(updateIntroProgress);
+
+        window.setTimeout(() => {
+          if (!siteIntro.isConnected) return;
+          if (introPercent) introPercent.textContent = '100%';
+
+          /*
+            底层页面早已按最终状态完整渲染。
+            中央内容开始溶解后，整个启动层立即进入交叉淡出，
+            因而真实页面会在动画结束前完整进入视野。
+          */
+          document.body.classList.add('intro-revealing');
+          siteIntro.classList.add('is-dissolving');
+
+          window.setTimeout(() => {
+            if (!siteIntro.isConnected) return;
+
+            window.requestAnimationFrame(() => {
+              window.requestAnimationFrame(() => {
+                siteIntro.classList.add('is-leaving');
+              });
+            });
+
+            let finalized = false;
+            const finishIntro = () => {
+              if (finalized) return;
+              finalized = true;
+              siteIntro.remove();
+              document.body.classList.remove('intro-active', 'intro-revealing');
+            };
+
+            siteIntro.addEventListener('transitionend', (event) => {
+              if (event.target === siteIntro && event.propertyName === 'opacity') {
+                finishIntro();
+              }
+            }, { once: true });
+
+            // 兼容后台标签页、低帧率设备以及 transitionend 未触发的情况。
+            window.setTimeout(finishIntro, exitDuration);
+          }, revealLead);
+        }, stayDuration);
+      } else {
+        document.body.classList.remove('intro-active', 'intro-revealing');
+      }
+
+
+      // 内置滚动条：完全替代浏览器原生滚动条，并与页面滚动实时同步。
+      const customScrollbar = document.getElementById('custom-scrollbar');
+      const customScrollbarTrack = document.getElementById('custom-scrollbar-track');
+      const customScrollbarThumb = document.getElementById('custom-scrollbar-thumb');
+
+      if (customScrollbar && customScrollbarTrack && customScrollbarThumb) {
+        const scrollbarState = {
+          trackHeight: 0,
+          thumbHeight: 0,
+          maxThumbTravel: 0,
+          maxScroll: 0,
+          dragging: false,
+          dragOffset: 0,
+          frame: 0,
+          activeTimer: 0
+        };
+
+        const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+        function readScrollMetrics() {
+          const root = document.documentElement;
+          const body = document.body;
+          const viewportHeight = window.innerHeight;
+          const documentHeight = Math.max(
+            root.scrollHeight,
+            root.offsetHeight,
+            body.scrollHeight,
+            body.offsetHeight
+          );
+
+          scrollbarState.trackHeight = customScrollbarTrack.clientHeight;
+          scrollbarState.maxScroll = Math.max(documentHeight - viewportHeight, 0);
+          scrollbarState.thumbHeight = scrollbarState.maxScroll > 0
+            ? Math.max(50, scrollbarState.trackHeight * (viewportHeight / documentHeight))
+            : scrollbarState.trackHeight;
+          scrollbarState.thumbHeight = Math.min(scrollbarState.thumbHeight, scrollbarState.trackHeight);
+          scrollbarState.maxThumbTravel = Math.max(scrollbarState.trackHeight - scrollbarState.thumbHeight, 0);
+        }
+
+        function paintCustomScrollbar() {
+          scrollbarState.frame = 0;
+          readScrollMetrics();
+
+          const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+          const progress = scrollbarState.maxScroll > 0
+            ? clamp(scrollTop / scrollbarState.maxScroll, 0, 1)
+            : 0;
+          const thumbTop = progress * scrollbarState.maxThumbTravel;
+
+          customScrollbarThumb.style.height = `${scrollbarState.thumbHeight}px`;
+          customScrollbarThumb.style.transform = `translate3d(0, ${thumbTop}px, 0)`;
+          customScrollbar.setAttribute('aria-valuenow', String(Math.round(progress * 100)));
+          customScrollbar.classList.toggle('is-hidden', scrollbarState.maxScroll <= 1);
+        }
+
+        function requestScrollbarPaint() {
+          if (!scrollbarState.frame) {
+            scrollbarState.frame = window.requestAnimationFrame(paintCustomScrollbar);
+          }
+        }
+
+        function activateScrollbar() {
+          customScrollbar.classList.add('is-active');
+          window.clearTimeout(scrollbarState.activeTimer);
+          scrollbarState.activeTimer = window.setTimeout(() => {
+            if (!scrollbarState.dragging) customScrollbar.classList.remove('is-active');
+          }, 760);
+        }
+
+        function scrollFromPointer(clientY, centerThumb = false) {
+          readScrollMetrics();
+          if (scrollbarState.maxScroll <= 0) return;
+
+          const trackRect = customScrollbarTrack.getBoundingClientRect();
+          const offset = centerThumb
+            ? scrollbarState.thumbHeight / 2
+            : scrollbarState.dragOffset;
+          const thumbTop = clamp(
+            clientY - trackRect.top - offset,
+            0,
+            scrollbarState.maxThumbTravel
+          );
+          const progress = scrollbarState.maxThumbTravel > 0
+            ? thumbTop / scrollbarState.maxThumbTravel
+            : 0;
+
+          window.scrollTo({ top: progress * scrollbarState.maxScroll, behavior: 'auto' });
+        }
+
+        customScrollbarTrack.addEventListener('pointerdown', (event) => {
+          if (document.body.classList.contains('intro-active')) return;
+          event.preventDefault();
+          activateScrollbar();
+
+          if (event.target === customScrollbarThumb || customScrollbarThumb.contains(event.target)) {
+            const thumbRect = customScrollbarThumb.getBoundingClientRect();
+            scrollbarState.dragging = true;
+            scrollbarState.dragOffset = event.clientY - thumbRect.top;
+            customScrollbar.classList.add('is-dragging');
+            document.body.classList.add('custom-scroll-dragging');
+            customScrollbarTrack.setPointerCapture?.(event.pointerId);
+          } else {
+            scrollFromPointer(event.clientY, true);
+          }
+        });
+
+        customScrollbarTrack.addEventListener('pointermove', (event) => {
+          if (!scrollbarState.dragging) return;
+          event.preventDefault();
+          scrollFromPointer(event.clientY, false);
+        });
+
+        function endScrollbarDrag(event) {
+          if (!scrollbarState.dragging) return;
+          scrollbarState.dragging = false;
+          customScrollbar.classList.remove('is-dragging');
+          document.body.classList.remove('custom-scroll-dragging');
+          if (event?.pointerId !== undefined) {
+            try { customScrollbarTrack.releasePointerCapture?.(event.pointerId); } catch (_) {}
+          }
+          activateScrollbar();
+        }
+
+        customScrollbarTrack.addEventListener('pointerup', endScrollbarDrag);
+        customScrollbarTrack.addEventListener('pointercancel', endScrollbarDrag);
+
+        customScrollbar.addEventListener('keydown', (event) => {
+          if (document.body.classList.contains('intro-active')) return;
+          const viewportStep = Math.max(window.innerHeight * .82, 240);
+          const lineStep = 72;
+          let target = window.scrollY;
+
+          switch (event.key) {
+            case 'ArrowDown': target += lineStep; break;
+            case 'ArrowUp': target -= lineStep; break;
+            case 'PageDown': target += viewportStep; break;
+            case 'PageUp': target -= viewportStep; break;
+            case 'Home': target = 0; break;
+            case 'End': target = scrollbarState.maxScroll; break;
+            default: return;
+          }
+
+          event.preventDefault();
+          readScrollMetrics();
+          window.scrollTo({ top: clamp(target, 0, scrollbarState.maxScroll), behavior: 'smooth' });
+          activateScrollbar();
+        });
+        window.addEventListener('scroll', () => {
+          requestScrollbarPaint();
+          activateScrollbar();
+        }, { passive: true });
+        window.addEventListener('resize', requestScrollbarPaint, { passive: true });
+        window.addEventListener('load', requestScrollbarPaint, { once: true });
+
+        if ('ResizeObserver' in window) {
+          const scrollbarResizeObserver = new ResizeObserver(requestScrollbarPaint);
+          scrollbarResizeObserver.observe(document.documentElement);
+          scrollbarResizeObserver.observe(document.body);
+        }
+
+        requestScrollbarPaint();
+      }
+
 
       const ICONS = {
         cube: '<svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.5 7.7 7.5 4.2 7.5-4.2M12 12v9"/></svg>',
@@ -1911,5 +2939,5 @@
       renderItems();
     })();
   </script>
-<script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/SoruxGPT.js"></script></body>
+<script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/SoruxGPT.js"></script><script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/SoruxGPT.js"></script></body>
 </html>
